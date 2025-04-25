@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	
+
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
@@ -36,9 +36,115 @@ func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) 
 
 // RequestLOC creates a new LoC request
 func (s *SmartContract) RequestLOC(ctx contractapi.TransactionContextInterface, locID string, buyer string, seller string, issuingBank string, advisingBank string, amount string, currency string, expiryDate string, goodsDescription string) error {
-	// TODO: Implement RequestLOC function
-	// Verify caller is TataMotors
-	// Create new LoC with status "Requested"
+
+	clientmpsid, err := ctx.GetClientIdentity.GetMSPID()
+
+	if err != nil {
+		return fmt.Errorf("Error while fetching the MSP ID: %v", err)
+	}
+
+	if clientmpsid != "TataMotorsMSP" {
+		return fmt.Errorf("Only tata motors have the privelege to request the LOC: %v", err)
+	}
+
+	letterofcredit := LetterOfCredit{
+		LOCID:            locID,
+		Buyer:            buyer,
+		Seller:           seller,
+		IssuingBank:      issuingBank,
+		AdvisingBank:     advisingBank,
+		Amount:           amount,
+		Currency:         currency,
+		ExpiryDate:       expiryDate,
+		GoodsDescription: goodsDescription,
+		Status:           "Requested",
+		DocumentHashes:   []string{"123"},
+		History:          []string{"hist1"},
+	}
+
+	exists, err := ctx.GetStub().GetState(locID)
+
+	if err != nil {
+		return fmt.Errorf("Error while fetching the loc id: %v", err)
+	}
+
+	if exists != nil {
+		return fmt.Errorf("loc id already exists in the ledger: %v", err)
+	}
+
+	locjson, err := json.Marshal(letterofcredit)
+
+	if err != nil {
+		return fmt.Errorf("Error while marshal the loc data: %v", err)
+	}
+
+	if locjson == nil {
+		return fmt.Errorf("Empty values passed for the loc data: %v", err)
+	}
+
+	err = ctx.GetStub.PutState(locID, locjson)
+
+	if err != nil {
+		return fmt.Errorf("Error while put state of the loc data: %v", err)
+	}
+
+	// Add to history
+	return nil
+}
+
+func (s *SmartContract) IssueLOC(ctx contractapi.TransactionContextInterface, locID string, buyer string, seller string, issuingBank string, advisingBank string, amount string, currency string, expiryDate string, goodsDescription string) error {
+
+	clientmpsid, err := ctx.GetClientIdentity.GetMSPID()
+
+	if err != nil {
+		return fmt.Errorf("Error while fetching the MSP ID: %v", err)
+	}
+
+	if clientmpsid != "TataMotorsMSP" {
+		return fmt.Errorf("Only tata motors have the privelege to request the LOC: %v", err)
+	}
+
+	letterofcredit := LetterOfCredit{
+		LOCID:            locID,
+		Buyer:            buyer,
+		Seller:           seller,
+		IssuingBank:      issuingBank,
+		AdvisingBank:     advisingBank,
+		Amount:           amount,
+		Currency:         currency,
+		ExpiryDate:       expiryDate,
+		GoodsDescription: goodsDescription,
+		Status:           "Requested",
+		DocumentHashes:   []string{"123"},
+		History:          []string{"hist1"},
+	}
+
+	exists, err := ctx.GetStub().GetState(locID)
+
+	if err != nil {
+		return fmt.Errorf("Error while fetching the loc id: %v", err)
+	}
+
+	if exists != nil {
+		return fmt.Errorf("loc id already exists in the ledger: %v", err)
+	}
+
+	locjson, err := json.Marshal(letterofcredit)
+
+	if err != nil {
+		return fmt.Errorf("Error while marshal the loc data: %v", err)
+	}
+
+	if locjson == nil {
+		return fmt.Errorf("Empty values passed for the loc data: %v", err)
+	}
+
+	err = ctx.GetStub.PutState(locID, locjson)
+
+	if err != nil {
+		return fmt.Errorf("Error while put state of the loc data: %v", err)
+	}
+
 	// Add to history
 	return nil
 }
